@@ -193,10 +193,52 @@
             font-size: 1em;
             color: #01579b;
             font-weight: 500;
+            transition: all 0.3s;
         }
 
         .task-has-description {
             cursor: pointer;
+        }
+
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #29B6F6;
+            border-radius: 4px;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            transition: all 0.3s;
+        }
+
+        .task-checkbox:hover {
+            background: #e1f5fe;
+            border-color: #0288D1;
+        }
+
+        .task-checkbox.checked {
+            background: linear-gradient(135deg, #4FC3F7 0%, #03A9F4 100%);
+            border-color: #03A9F4;
+        }
+
+        .task-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .task-completed .task-text {
+            text-decoration: line-through;
+            opacity: 0.6;
+            color: #757575;
+        }
+
+        .task-completed {
+            opacity: 0.8;
         }
 
         .task-description-preview {
@@ -939,6 +981,18 @@
             reader.onload = function(e) {
                 try {
                     const loadedTasks = JSON.parse(e.target.result);
+                    
+                    // Ensure all tasks have required properties
+                    function validateTask(task) {
+                        if (!task.hasOwnProperty('completed')) task.completed = false;
+                        if (!task.hasOwnProperty('description')) task.description = '';
+                        if (!task.hasOwnProperty('images')) task.images = [];
+                        if (task.children && task.children.length > 0) {
+                            task.children.forEach(validateTask);
+                        }
+                    }
+                    
+                    loadedTasks.forEach(validateTask);
                     tasks = loadedTasks;
                     
                     // Update taskIdCounter to avoid ID conflicts
@@ -984,6 +1038,7 @@
                 text: taskText,
                 description: '',
                 images: [],
+                completed: false,
                 children: []
             };
 
@@ -1004,6 +1059,7 @@
                 text: taskText.trim(),
                 description: '',
                 images: [],
+                completed: false,
                 children: []
             };
 
@@ -1037,6 +1093,14 @@
                 }
             }
             return null;
+        }
+
+        function toggleComplete(taskId) {
+            const task = findTaskById(tasks, taskId);
+            if (task) {
+                task.completed = !task.completed;
+                renderTree();
+            }
         }
 
         async function deleteTask(taskId) {
@@ -1085,10 +1149,13 @@
             const hasChildren = task.children.length > 0;
             const toggleClass = hasChildren ? 'expanded' : 'no-children';
             const hasDescription = task.description || (task.images && task.images.length > 0);
+            const completedClass = task.completed ? 'task-completed' : '';
+            const checkboxClass = task.completed ? 'task-checkbox checked' : 'task-checkbox';
             
             let html = `
                 <li class="tree-item">
-                    <div class="task-content">
+                    <div class="task-content ${completedClass}">
+                        <div class="${checkboxClass}" onclick="toggleComplete(${task.id})"></div>
                         <div id="toggle-${task.id}" class="task-toggle ${toggleClass}" ${hasChildren ? `onclick="toggleSubtree(${task.id})"` : ''}></div>
                         <span class="task-text">${escapeHtml(task.text)}</span>
                         <div class="task-actions">
