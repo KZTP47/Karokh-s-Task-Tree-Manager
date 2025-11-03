@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karokh's Task Tree Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #d4f1f9 0%, #a8e0f0 50%, #75c9e8 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(31, 138, 200, 0.3);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4FC3F7 0%, #29B6F6 50%, #03A9F4 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(3, 169, 244, 0.3);
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            position: relative;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            opacity: 0.95;
+            font-size: 0.95em;
+            position: relative;
+        }
+
+        .add-task-section {
+            padding: 25px 30px;
+            background: linear-gradient(180deg, #f0f9ff 0%, #e1f5fe 100%);
+            border-bottom: 2px solid rgba(3, 169, 244, 0.2);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        #newTaskInput {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #81d4fa;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+            background: white;
+            box-shadow: inset 0 2px 4px rgba(3, 169, 244, 0.1);
+        }
+
+        #newTaskInput:focus {
+            outline: none;
+            border-color: #29B6F6;
+            box-shadow: 0 0 0 3px rgba(41, 182, 246, 0.2);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4FC3F7 0%, #03A9F4 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(3, 169, 244, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #29B6F6 0%, #0288D1 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(3, 169, 244, 0.4);
+        }
+
+        .tree-container {
+            padding: 30px;
+            min-height: 300px;
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .tree-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .tree-item {
+            margin: 10px 0;
+            position: relative;
+        }
+
+        .tree-item > .task-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 15px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(225,245,254,0.9) 100%);
+            border-radius: 10px;
+            border-left: 4px solid #29B6F6;
+            transition: all 0.3s;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(3, 169, 244, 0.15);
+        }
+
+        .tree-item > .task-content:hover {
+            background: linear-gradient(135deg, rgba(225,245,254,1) 0%, rgba(179,229,252,0.9) 100%);
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(3, 169, 244, 0.25);
+        }
+
+        .task-toggle {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #29B6F6;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #ffffff 0%, #e1f5fe 100%);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #0288D1;
+            flex-shrink: 0;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(3, 169, 244, 0.2);
+        }
+
+        .task-toggle:hover {
+            background: linear-gradient(135deg, #4FC3F7 0%, #29B6F6 100%);
+            color: white;
+            box-shadow: 0 3px 8px rgba(3, 169, 244, 0.3);
+        }
+
+        .task-toggle.collapsed::before {
+            content: '+';
+        }
+
+        .task-toggle.expanded::before {
+            content: '−';
+        }
+
+        .task-toggle.no-children {
+            opacity: 0.3;
+            cursor: default;
+            border-color: #b3e5fc;
+        }
+
+        .task-toggle.no-children:hover {
+            background: linear-gradient(135deg, #ffffff 0%, #e1f5fe 100%);
+            color: #b3e5fc;
+        }
+
+        .task-text {
+            flex: 1;
+            font-size: 1em;
+            color: #01579b;
+            font-weight: 500;
+        }
+
+        .task-has-description {
+            cursor: pointer;
+        }
+
+        .task-description-preview {
+            margin-top: 8px;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #01579b;
+            border-left: 3px solid #4FC3F7;
+            max-width: 600px;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85em;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-edit {
+            background: linear-gradient(135deg, #ffd54f 0%, #ffca28 100%);
+            color: #01579b;
+            box-shadow: 0 2px 6px rgba(255, 202, 40, 0.3);
+        }
+
+        .btn-edit:hover {
+            background: linear-gradient(135deg, #ffca28 0%, #ffb300 100%);
+            transform: scale(1.05);
+            box-shadow: 0 3px 10px rgba(255, 202, 40, 0.4);
+        }
+
+        .btn-add {
+            background: linear-gradient(135deg, #4dd0e1 0%, #26c6da 100%);
+            color: white;
+            box-shadow: 0 2px 6px rgba(38, 198, 218, 0.3);
+        }
+
+        .btn-add:hover {
+            background: linear-gradient(135deg, #26c6da 0%, #00bcd4 100%);
+            transform: scale(1.05);
+            box-shadow: 0 3px 10px rgba(38, 198, 218, 0.4);
+        }
+
+        .btn-delete {
+            background: linear-gradient(135deg, #ff6b9d 0%, #f06292 100%);
+            color: white;
+            box-shadow: 0 2px 6px rgba(240, 98, 146, 0.3);
+        }
+
+        .btn-delete:hover {
+            background: linear-gradient(135deg, #f06292 0%, #ec407a 100%);
+            transform: scale(1.05);
+            box-shadow: 0 3px 10px rgba(240, 98, 146, 0.4);
+        }
+
+        .subtree {
+            list-style: none;
+            padding-left: 40px;
+            margin-top: 10px;
+            position: relative;
+        }
+
+        .subtree::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, #81d4fa 0%, #b3e5fc 100%);
+        }
+
+        .subtree > .tree-item::before {
+            content: '';
+            position: absolute;
+            left: -25px;
+            top: 24px;
+            width: 20px;
+            height: 2px;
+            background: #b3e5fc;
+        }
+
+        .subtree.hidden {
+            display: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #4FC3F7;
+        }
+
+        .empty-state svg {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            color: #0288D1;
+        }
+
+        .empty-state p {
+            font-size: 1em;
+            color: #4FC3F7;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            animation: fadeIn 0.2s;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Modal Box */
+        .modal-box {
+            background: linear-gradient(135deg, #ffffff 0%, #e1f5fe 100%);
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(3, 169, 244, 0.4);
+            animation: slideIn 0.3s;
+            border: 2px solid #81d4fa;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            font-size: 1.3em;
+            color: #0288D1;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .modal-message {
+            color: #01579b;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #81d4fa;
+            border-radius: 8px;
+            font-size: 1em;
+            margin-bottom: 15px;
+            box-shadow: inset 0 2px 4px rgba(3, 169, 244, 0.1);
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: #29B6F6;
+            box-shadow: 0 0 0 3px rgba(41, 182, 246, 0.2);
+        }
+
+        .modal-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px 12px;
+            border: 2px solid #81d4fa;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin-bottom: 15px;
+            resize: vertical;
+            box-shadow: inset 0 2px 4px rgba(3, 169, 244, 0.1);
+        }
+
+        .modal-textarea:focus {
+            outline: none;
+            border-color: #29B6F6;
+            box-shadow: 0 0 0 3px rgba(41, 182, 246, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #0288D1;
+            margin-bottom: 8px;
+        }
+
+        .image-upload-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .image-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 8px 12px;
+            border: 2px solid #81d4fa;
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+
+        .btn-upload {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #4FC3F7 0%, #03A9F4 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.9em;
+        }
+
+        .btn-upload:hover {
+            background: linear-gradient(135deg, #29B6F6 0%, #0288D1 100%);
+            box-shadow: 0 3px 10px rgba(3, 169, 244, 0.3);
+        }
+
+        .description-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .image-preview {
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(3, 169, 244, 0.2);
+        }
+
+        .image-preview-remove {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #ff6b9d 0%, #f06292 100%);
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .image-preview-remove:hover {
+            background: linear-gradient(135deg, #f06292 0%, #ec407a 100%);
+            transform: scale(1.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95em;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .modal-btn-confirm {
+            background: linear-gradient(135deg, #4FC3F7 0%, #03A9F4 100%);
+            color: white;
+            box-shadow: 0 3px 10px rgba(3, 169, 244, 0.3);
+        }
+
+        .modal-btn-confirm:hover {
+            background: linear-gradient(135deg, #29B6F6 0%, #0288D1 100%);
+            box-shadow: 0 4px 15px rgba(3, 169, 244, 0.4);
+        }
+
+        .modal-btn-cancel {
+            background: linear-gradient(135deg, #b3e5fc 0%, #81d4fa 100%);
+            color: #01579b;
+            box-shadow: 0 3px 10px rgba(129, 212, 250, 0.3);
+        }
+
+        .modal-btn-cancel:hover {
+            background: linear-gradient(135deg, #81d4fa 0%, #4fc3f7 100%);
+            box-shadow: 0 4px 15px rgba(129, 212, 250, 0.4);
+        }
+
+        .modal-btn-delete {
+            background: linear-gradient(135deg, #ff6b9d 0%, #f06292 100%);
+            color: white;
+            box-shadow: 0 3px 10px rgba(240, 98, 146, 0.3);
+        }
+
+        .modal-btn-delete:hover {
+            background: linear-gradient(135deg, #f06292 0%, #ec407a 100%);
+            box-shadow: 0 4px 15px rgba(240, 98, 146, 0.4);
+        }
+
+        /* Image Lightbox */
+        .lightbox-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s;
+        }
+
+        .lightbox-overlay.active {
+            display: flex;
+        }
+
+        .lightbox-content {
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+        }
+
+        .lightbox-image {
+            max-width: 100%;
+            max-height: 90vh;
+            border-radius: 10px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background: linear-gradient(135deg, #ff6b9d 0%, #f06292 100%);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.5em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .lightbox-close:hover {
+            background: linear-gradient(135deg, #f06292 0%, #ec407a 100%);
+            transform: scale(1.1);
+        }
+
+        /* Multiple images in preview */
+        .task-description-preview img {
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .task-description-preview img:hover {
+            transform: scale(1.05);
+        }
+
+        .preview-images-grid {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .preview-images-grid img {
+            max-width: 120px;
+            max-height: 120px;
+            object-fit: cover;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(3, 169, 244, 0.2);
+        }
+
+        /* Save/Load buttons */
+        .save-load-section {
+            padding: 15px 30px;
+            background: linear-gradient(180deg, #e1f5fe 0%, #b3e5fc 100%);
+            border-bottom: 2px solid rgba(3, 169, 244, 0.2);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-secondary {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            background: linear-gradient(135deg, #4FC3F7 0%, #03A9F4 100%);
+            color: white;
+            box-shadow: 0 3px 10px rgba(3, 169, 244, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #29B6F6 0%, #0288D1 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(3, 169, 244, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Karokh's Task Tree Manager</h1>
+            <p>Organize your tasks as branches on a tree</p>
+        </div>
+
+        <div class="save-load-section">
+            <button class="btn-secondary" onclick="saveToJSON()">💾 Save to JSON</button>
+            <button class="btn-secondary" onclick="document.getElementById('loadFileInput').click()">📂 Load from JSON</button>
+            <input type="file" id="loadFileInput" accept=".json" style="display: none;" onchange="loadFromJSON(event)">
+        </div>
+
+        <div class="add-task-section">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="newTaskInput" 
+                    placeholder="Enter a new task..."
+                    onkeypress="handleKeyPress(event)"
+                >
+                <button class="btn btn-primary" onclick="addRootTask()">Add Task</button>
+            </div>
+        </div>
+
+        <div class="tree-container">
+            <ul id="taskTree" class="tree-list"></ul>
+            <div id="emptyState" class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+                <h3>No tasks yet</h3>
+                <p>Add your first task to start building your tree</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div id="modalBox" class="modal-box">
+            <div id="modalHeader" class="modal-header"></div>
+            <div id="modalMessage" class="modal-message"></div>
+            <input type="text" id="modalInput" class="modal-input" style="display: none;">
+            
+            <!-- Edit Task Form -->
+            <div id="editForm" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">Task Name</label>
+                    <input type="text" id="editTaskName" class="modal-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="editTaskDescription" class="modal-textarea" placeholder="Add a description for this task..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Images</label>
+                    <div class="image-upload-section">
+                        <input type="text" id="imageUrlInput" class="image-input" placeholder="Paste image URL...">
+                        <button class="btn-upload" onclick="addImageToTask()">Add Image</button>
+                        <input type="file" id="imageFileInput" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+                        <button class="btn-upload" onclick="document.getElementById('imageFileInput').click()">Upload Image</button>
+                    </div>
+                    <div id="editTaskImages" class="description-images"></div>
+                </div>
+            </div>
+            
+            <div id="modalButtons" class="modal-buttons"></div>
+        </div>
+    </div>
+
+    <!-- Image Lightbox -->
+    <div id="lightboxOverlay" class="lightbox-overlay" onclick="closeLightbox()">
+        <div class="lightbox-content" onclick="event.stopPropagation()">
+            <button class="lightbox-close" onclick="closeLightbox()">×</button>
+            <img id="lightboxImage" class="lightbox-image" src="" alt="Enlarged view">
+        </div>
+    </div>
+
+    <script>
+        let taskIdCounter = 0;
+        let tasks = [];
+        let modalResolve = null;
+        let currentEditingTask = null;
+        let tempImages = [];
+
+        // Custom modal functions
+        function showModal(title, message, type = 'alert', defaultValue = '') {
+            return new Promise((resolve) => {
+                modalResolve = resolve;
+                const overlay = document.getElementById('modalOverlay');
+                const modalBox = document.getElementById('modalBox');
+                const header = document.getElementById('modalHeader');
+                const messageDiv = document.getElementById('modalMessage');
+                const input = document.getElementById('modalInput');
+                const buttons = document.getElementById('modalButtons');
+                const editForm = document.getElementById('editForm');
+
+                // Reset visibility
+                editForm.style.display = 'none';
+                messageDiv.style.display = 'block';
+
+                header.textContent = title;
+                messageDiv.textContent = message;
+
+                if (type === 'prompt') {
+                    input.style.display = 'block';
+                    input.value = defaultValue;
+                    input.focus();
+                    buttons.innerHTML = `
+                        <button class="modal-btn modal-btn-cancel" onclick="closeModal(null)">Cancel</button>
+                        <button class="modal-btn modal-btn-confirm" onclick="closeModal(document.getElementById('modalInput').value)">OK</button>
+                    `;
+                    input.onkeypress = (e) => {
+                        if (e.key === 'Enter') {
+                            closeModal(input.value);
+                        }
+                    };
+                } else if (type === 'confirm') {
+                    input.style.display = 'none';
+                    buttons.innerHTML = `
+                        <button class="modal-btn modal-btn-cancel" onclick="closeModal(false)">Cancel</button>
+                        <button class="modal-btn modal-btn-delete" onclick="closeModal(true)">Delete</button>
+                    `;
+                } else {
+                    input.style.display = 'none';
+                    buttons.innerHTML = `
+                        <button class="modal-btn modal-btn-confirm" onclick="closeModal(true)">OK</button>
+                    `;
+                }
+
+                overlay.classList.add('active');
+            });
+        }
+
+        function showEditModal(taskId) {
+            const task = findTaskById(tasks, taskId);
+            if (!task) return;
+
+            currentEditingTask = task;
+            tempImages = [...(task.images || [])];
+
+            const overlay = document.getElementById('modalOverlay');
+            const header = document.getElementById('modalHeader');
+            const messageDiv = document.getElementById('modalMessage');
+            const input = document.getElementById('modalInput');
+            const editForm = document.getElementById('editForm');
+            const buttons = document.getElementById('modalButtons');
+
+            // Setup edit form
+            header.textContent = 'Edit Task';
+            messageDiv.style.display = 'none';
+            input.style.display = 'none';
+            editForm.style.display = 'block';
+
+            document.getElementById('editTaskName').value = task.text;
+            document.getElementById('editTaskDescription').value = task.description || '';
+            document.getElementById('imageUrlInput').value = '';
+
+            renderEditImages();
+
+            buttons.innerHTML = `
+                <button class="modal-btn modal-btn-cancel" onclick="closeModal(false)">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" onclick="saveTaskEdit()">Save</button>
+            `;
+
+            overlay.classList.add('active');
+        }
+
+        function renderEditImages() {
+            const container = document.getElementById('editTaskImages');
+            container.innerHTML = '';
+
+            tempImages.forEach((imgUrl, index) => {
+                const preview = document.createElement('div');
+                preview.className = 'image-preview';
+                preview.innerHTML = `
+                    <img src="${imgUrl}" alt="Image ${index + 1}">
+                    <div class="image-preview-remove" onclick="removeImage(${index})">×</div>
+                `;
+                container.appendChild(preview);
+            });
+        }
+
+        function addImageToTask() {
+            const urlInput = document.getElementById('imageUrlInput');
+            const url = urlInput.value.trim();
+
+            if (url) {
+                tempImages.push(url);
+                renderEditImages();
+                urlInput.value = '';
+            }
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    tempImages.push(e.target.result);
+                    renderEditImages();
+                };
+                reader.readAsDataURL(file);
+            }
+            event.target.value = '';
+        }
+
+        function removeImage(index) {
+            tempImages.splice(index, 1);
+            renderEditImages();
+        }
+
+        function saveTaskEdit() {
+            if (currentEditingTask) {
+                const newName = document.getElementById('editTaskName').value.trim();
+                const newDescription = document.getElementById('editTaskDescription').value.trim();
+
+                if (newName) {
+                    currentEditingTask.text = newName;
+                    currentEditingTask.description = newDescription;
+                    currentEditingTask.images = [...tempImages];
+                    renderTree();
+                }
+            }
+            closeModal(true);
+        }
+
+        function closeModal(result) {
+            const overlay = document.getElementById('modalOverlay');
+            overlay.classList.remove('active');
+            if (modalResolve) {
+                modalResolve(result);
+                modalResolve = null;
+            }
+            currentEditingTask = null;
+            tempImages = [];
+        }
+
+        // Lightbox functions
+        function openLightbox(imageSrc) {
+            const lightbox = document.getElementById('lightboxOverlay');
+            const lightboxImage = document.getElementById('lightboxImage');
+            lightboxImage.src = imageSrc;
+            lightbox.classList.add('active');
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightboxOverlay');
+            lightbox.classList.remove('active');
+        }
+
+        // Save/Load functions
+        function saveToJSON() {
+            const dataStr = JSON.stringify(tasks, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'karokh-task-tree.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function loadFromJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const loadedTasks = JSON.parse(e.target.result);
+                    tasks = loadedTasks;
+                    
+                    // Update taskIdCounter to avoid ID conflicts
+                    let maxId = 0;
+                    function findMaxId(taskList) {
+                        taskList.forEach(task => {
+                            if (task.id > maxId) maxId = task.id;
+                            if (task.children && task.children.length > 0) {
+                                findMaxId(task.children);
+                            }
+                        });
+                    }
+                    findMaxId(tasks);
+                    taskIdCounter = maxId + 1;
+                    
+                    renderTree();
+                    showModal('Success', 'Task tree loaded successfully!', 'alert');
+                } catch (error) {
+                    showModal('Error', 'Failed to load task tree. Invalid JSON file.', 'alert');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                addRootTask();
+            }
+        }
+
+        async function addRootTask() {
+            const input = document.getElementById('newTaskInput');
+            const taskText = input.value.trim();
+            
+            if (taskText === '') {
+                await showModal('Empty Task', 'Please enter a task!', 'alert');
+                return;
+            }
+
+            const task = {
+                id: taskIdCounter++,
+                text: taskText,
+                description: '',
+                images: [],
+                children: []
+            };
+
+            tasks.push(task);
+            input.value = '';
+            renderTree();
+        }
+
+        async function addSubTask(parentId) {
+            const taskText = await showModal('Add Sub-Task', 'Enter sub-task:', 'prompt');
+            
+            if (taskText === null || taskText.trim() === '') {
+                return;
+            }
+
+            const subTask = {
+                id: taskIdCounter++,
+                text: taskText.trim(),
+                description: '',
+                images: [],
+                children: []
+            };
+
+            addSubTaskToParent(tasks, parentId, subTask);
+            renderTree();
+        }
+
+        function addSubTaskToParent(taskList, parentId, newTask) {
+            for (let task of taskList) {
+                if (task.id === parentId) {
+                    task.children.push(newTask);
+                    return true;
+                }
+                if (task.children.length > 0) {
+                    if (addSubTaskToParent(task.children, parentId, newTask)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function findTaskById(taskList, taskId) {
+            for (let task of taskList) {
+                if (task.id === taskId) {
+                    return task;
+                }
+                if (task.children.length > 0) {
+                    const found = findTaskById(task.children, taskId);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+
+        async function deleteTask(taskId) {
+            const confirmed = await showModal(
+                'Delete Task', 
+                'Are you sure you want to delete this task and all its sub-tasks?', 
+                'confirm'
+            );
+            
+            if (confirmed) {
+                tasks = deleteTaskFromList(tasks, taskId);
+                renderTree();
+            }
+        }
+
+        function deleteTaskFromList(taskList, taskId) {
+            return taskList.filter(task => {
+                if (task.id === taskId) {
+                    return false;
+                }
+                if (task.children.length > 0) {
+                    task.children = deleteTaskFromList(task.children, taskId);
+                }
+                return true;
+            });
+        }
+
+        function toggleSubtree(taskId) {
+            const subtree = document.getElementById(`subtree-${taskId}`);
+            const toggle = document.getElementById(`toggle-${taskId}`);
+            
+            if (subtree && toggle) {
+                if (subtree.classList.contains('hidden')) {
+                    subtree.classList.remove('hidden');
+                    toggle.classList.remove('collapsed');
+                    toggle.classList.add('expanded');
+                } else {
+                    subtree.classList.add('hidden');
+                    toggle.classList.remove('expanded');
+                    toggle.classList.add('collapsed');
+                }
+            }
+        }
+
+        function renderTask(task, isLast = false) {
+            const hasChildren = task.children.length > 0;
+            const toggleClass = hasChildren ? 'expanded' : 'no-children';
+            const hasDescription = task.description || (task.images && task.images.length > 0);
+            
+            let html = `
+                <li class="tree-item">
+                    <div class="task-content">
+                        <div id="toggle-${task.id}" class="task-toggle ${toggleClass}" ${hasChildren ? `onclick="toggleSubtree(${task.id})"` : ''}></div>
+                        <span class="task-text">${escapeHtml(task.text)}</span>
+                        <div class="task-actions">
+                            <button class="btn-small btn-edit" onclick="showEditModal(${task.id})">Edit</button>
+                            <button class="btn-small btn-add" onclick="addSubTask(${task.id})">+ Sub</button>
+                            <button class="btn-small btn-delete" onclick="deleteTask(${task.id})">Delete</button>
+                        </div>
+                    </div>
+            `;
+
+            // Show description preview if exists
+            if (hasDescription) {
+                html += '<div class="task-description-preview">';
+                if (task.description) {
+                    const preview = escapeHtml(task.description).substring(0, 100);
+                    html += preview;
+                    if (task.description.length > 100) html += '...';
+                }
+                if (task.images && task.images.length > 0) {
+                    html += '<div class="preview-images-grid">';
+                    task.images.forEach((imgUrl, index) => {
+                        html += `<img src="${imgUrl}" alt="Image ${index + 1}" onclick="openLightbox('${imgUrl.replace(/'/g, "\\'")}')">`;
+                    });
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+
+            if (hasChildren) {
+                html += `<ul id="subtree-${task.id}" class="subtree">`;
+                task.children.forEach((child, index) => {
+                    html += renderTask(child, index === task.children.length - 1);
+                });
+                html += '</ul>';
+            }
+
+            html += '</li>';
+            return html;
+        }
+
+        function renderTree() {
+            const treeElement = document.getElementById('taskTree');
+            const emptyState = document.getElementById('emptyState');
+
+            if (tasks.length === 0) {
+                treeElement.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            let html = '';
+            tasks.forEach((task, index) => {
+                html += renderTask(task, index === tasks.length - 1);
+            });
+            treeElement.innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Close modal when clicking overlay
+        document.getElementById('modalOverlay').addEventListener('click', (e) => {
+            if (e.target.id === 'modalOverlay') {
+                closeModal(null);
+            }
+        });
+
+        // Close lightbox with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const lightbox = document.getElementById('lightboxOverlay');
+                if (lightbox.classList.contains('active')) {
+                    closeLightbox();
+                }
+            }
+        });
+
+        // Initial render
+        renderTree();
+    </script>
+</body>
+</html>
